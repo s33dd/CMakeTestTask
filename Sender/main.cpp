@@ -1,7 +1,8 @@
 #include "input.h"
 #include <vector>
+#include <thread>
 
-void Processing(std::string line) {
+std::string Processing(std::string line) {
 	const int size = static_cast<int>(line.length());
 	std::vector<int> arr = { 0 };
 	for (int i = 0; i < size; i++) {
@@ -17,14 +18,19 @@ void Processing(std::string line) {
 			line += std::to_string(arr[i]);
 		}
 	}
-	std::cout << line;
+	return line;
 }
 
 int main(void) {
-	std::string input = UserInput();
-	while(!IsCorrect(input)) {
+	std::string input;
+	std::thread firstThread([&input]() {
 		input = UserInput();
-	}
-	Processing(input);
+		while (!IsCorrect(input)) {
+			input = UserInput();
+		}
+		input = Processing(input);
+	});
+	firstThread.join();
+	std::cout << input;
 	return 0;
 }
