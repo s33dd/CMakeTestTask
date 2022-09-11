@@ -1,6 +1,7 @@
 #include "input.h"
 #include <vector>
 #include <thread>
+#include <mutex>
 
 std::string Processing(std::string line) {
 	const int size = static_cast<int>(line.length());
@@ -23,14 +24,35 @@ std::string Processing(std::string line) {
 
 int main(void) {
 	std::string input;
-	std::thread firstThread([&input]() {
+	std::mutex mutex;
+	std::thread firstThread([&input, &mutex]() {
+		mutex.lock();
 		input = UserInput();
 		while (!IsCorrect(input)) {
 			input = UserInput();
 		}
 		input = Processing(input);
+		mutex.unlock();
+	});
+	std::thread secondThread([&input, &mutex]() {
+		mutex.lock();
+		std::string line = input;
+		input.clear();
+		mutex.unlock();
+		std::cout << "Received data: " << line << std::endl;
+		const int size = static_cast<int>(line.length());
+		int sum = 0;
+		for(int i = 0; i < size; i++) {
+			if(line[i] == 'R') {
+				i += 2;
+			}
+			else {
+				sum += line[i] - '0';
+			}
+		}
+		std::cout << sum << std::endl;
 	});
 	firstThread.join();
-	std::cout << input;
+	secondThread.join();
 	return 0;
 }
