@@ -2,6 +2,12 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#ifdef __linux__
+#include <pthread.h>
+#elif _WIN32
+#include <Windows.h>
+#endif
+
 
 std::string Processing(std::string line) {
 	const int size = static_cast<int>(line.length());
@@ -52,6 +58,15 @@ int main(void) {
 		}
 		std::cout << sum << std::endl;
 	});
+#ifdef __linux__
+	sched_param threadParams;
+	int policy;
+	pthread_getshedparam(secondThread.native_hande(), &policy, &threadParams);
+	threadParams.sched_priority = 10;
+	pthread_setschedparam(secondThread.native_handle(), &policy, &threadParams);
+#elif _WIN32
+	SetThreadPriority(secondThread.native_handle(), THREAD_PRIORITY_LOWEST);
+#endif
 	firstThread.join();
 	secondThread.join();
 	return 0;
