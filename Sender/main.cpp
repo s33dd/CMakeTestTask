@@ -63,7 +63,7 @@ int main(void) {
 	int policy;
 	pthread_getschedparam(secondThread.native_handle(), &policy, &threadParams);
 	threadParams.sched_priority = 10;
-	pthread_setschedparam(secondThread.native_handle(), *policy, &threadParams);
+	pthread_setschedparam(secondThread.native_handle(), policy, &threadParams);
 #elif _WIN32
 	SetThreadPriority(secondThread.native_handle(), THREAD_PRIORITY_LOWEST);
 #endif
