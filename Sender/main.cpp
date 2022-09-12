@@ -97,8 +97,14 @@ int main(void) {
 			}
 		}
 		listen(senderSock, 1);
+		
+#ifdef __linux__
+		socklen_t handlerSize = sizeof(handlerAddress);
+		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), handlerSize);
+#elif _WIN32
 		int handlerSize = sizeof(handlerAddress);
-		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), reinterpret_cast<int*>(handlerSize));
+		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
+#endif
 		std::cout << sum << std::endl;
 	});
 #ifdef __linux__
