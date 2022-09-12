@@ -14,6 +14,7 @@
 #include <winsock.h>
 #endif
 #define DEFAULT_PORT 1918
+#define BUFFER_SIZE 1024
 
 
 std::string Processing(std::string line) {
@@ -33,6 +34,10 @@ std::string Processing(std::string line) {
 		}
 	}
 	return line;
+}
+
+void Test() {
+	std::cout << "Test" << std::endl;
 }
 
 void SocketClose(int socket) {
@@ -91,6 +96,7 @@ int main(void) {
 		return 0;
 	}
 #endif
+	std::cout << "Handler connected" << std::endl;
 	std::string input;
 	std::mutex mutex;
 	std::thread firstThread([&input, &mutex]() {
@@ -118,7 +124,12 @@ int main(void) {
 				sum += line[i] - '0';
 			}
 		}
-		std::cout << sum << std::endl;
+		std::string stringBuf = std::to_string(sum);
+		char data[BUFFER_SIZE]{};
+		for (int i = 0; i < stringBuf.length(); i++) {
+			data[i] = stringBuf.c_str()[i];
+		}
+		send(senderSock, data, BUFFER_SIZE, 0);
 	});
 #ifdef __linux__
 	sched_param threadParams;
