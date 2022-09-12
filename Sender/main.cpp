@@ -104,6 +104,10 @@ int main(void) {
 #ifdef __linux__
 		socklen_t handlerSize = sizeof(handlerAddress);
 		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
+		if (senderSock < 0) {
+			std::cout << "ERROR: Accepting failed." << std::endl;
+			SocketClose(senderSock);
+		}
 #elif _WIN32
 		int handlerSize = sizeof(handlerAddress);
 		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
