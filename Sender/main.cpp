@@ -4,9 +4,16 @@
 #include <mutex>
 #ifdef __linux__
 #include <pthread.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #elif _WIN32
 #include <Windows.h>
+#include <winsock.h>
 #endif
+
+#define DEFAULT_PORT 1918
 
 
 std::string Processing(std::string line) {
@@ -29,6 +36,28 @@ std::string Processing(std::string line) {
 }
 
 int main(void) {
+	int senderSock;
+	sockaddr_in senderAddress;
+	sockaddr_in handlerAddress;
+
+#ifdef _WIN32
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
+
+	senderAddress.sin_family = AF_INET;
+	senderSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (senderSock < 0) {
+		std::cout << "ERROR: Socket was not created." << std::endl;
+		return 0;
+	}
+	senderAddress.sin_port = htons(DEFAULT_PORT);
+	senderAddress.sin_addr.s_addr = htons(INADDR_ANY);
+	if (bind(senderSock, reinterpret_cast<sockaddr*>(&senderAddress), sizeof(senderAddress)) < 0) {
+		std::cout << "ERROR: Binding failed." << std::endl;
+		return 0;
+	}
+
 	std::string input;
 	std::mutex mutex;
 	std::thread firstThread([&input, &mutex]() {
@@ -40,7 +69,7 @@ int main(void) {
 		input = Processing(input);
 		mutex.unlock();
 	});
-	std::thread secondThread([&input, &mutex]() {
+	std::thread secondThread([&input, &mutex, &senderSock, &handlerAddress]() {
 		mutex.lock();
 		std::string line = input;
 		input.clear();
@@ -56,6 +85,11 @@ int main(void) {
 				sum += line[i] - '0';
 			}
 		}
+		listen(senderSock, 1);
+		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), reinterpret_cast<int*>(sizeof(handlerAddress)));
+		if (senderSock < 0 ) {
+			std::cout << "ERROR: Connection failed." << std::endl;
+		}
 		std::cout << sum << std::endl;
 	});
 #ifdef __linux__
@@ -69,5 +103,12 @@ int main(void) {
 #endif
 	firstThread.join();
 	secondThread.join();
+#ifdef  __linux__
+	close(senderSock);
+#elif _WIN32
+	closesocket(senderSock);
+	WSACleanup();
+#endif
+
 	return 0;
 }

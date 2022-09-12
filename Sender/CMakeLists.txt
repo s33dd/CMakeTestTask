@@ -9,3 +9,7 @@ add_executable(sender
 	main.cpp
 	input.h
 	input.cpp)
+
+if(WIN32)
+	target_link_libraries(sender wsock32 ws2_32)
+endif()
