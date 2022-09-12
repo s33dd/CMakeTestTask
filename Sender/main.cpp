@@ -96,7 +96,10 @@ int main(void) {
 				sum += line[i] - '0';
 			}
 		}
-		listen(senderSock, 1);
+		if (listen(senderSock, 1) < 0) {
+			std::cout << "ERROR: Listening failed." << std::endl;
+			SocketClose(senderSock);
+		}
 		
 #ifdef __linux__
 		socklen_t handlerSize = sizeof(handlerAddress);
@@ -104,6 +107,10 @@ int main(void) {
 #elif _WIN32
 		int handlerSize = sizeof(handlerAddress);
 		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
+		if (senderSock < 0) {
+			std::cout << "ERROR: Accepting failed." << std::endl;
+			SocketClose(senderSock);
+		}
 #endif
 		std::cout << sum << std::endl;
 	});
