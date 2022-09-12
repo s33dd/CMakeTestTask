@@ -35,6 +35,15 @@ std::string Processing(std::string line) {
 	return line;
 }
 
+void SocketClose(int socket) {
+#ifdef  __linux__
+	close(socket);
+#elif _WIN32
+	closesocket(socket);
+	WSACleanup();
+#endif
+}
+
 int main(void) {
 	int senderSock;
 	sockaddr_in senderAddress;
@@ -49,12 +58,14 @@ int main(void) {
 	senderSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (senderSock < 0) {
 		std::cout << "ERROR: Socket was not created." << std::endl;
+		SocketClose(senderSock);
 		return 0;
 	}
 	senderAddress.sin_port = htons(DEFAULT_PORT);
 	senderAddress.sin_addr.s_addr = htons(INADDR_ANY);
 	if (bind(senderSock, reinterpret_cast<sockaddr*>(&senderAddress), sizeof(senderAddress)) < 0) {
 		std::cout << "ERROR: Binding failed." << std::endl;
+		SocketClose(senderSock);
 		return 0;
 	}
 
@@ -87,9 +98,6 @@ int main(void) {
 		}
 		listen(senderSock, 1);
 		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), reinterpret_cast<int*>(sizeof(handlerAddress)));
-		if (senderSock < 0 ) {
-			std::cout << "ERROR: Connection failed." << std::endl;
-		}
 		std::cout << sum << std::endl;
 	});
 #ifdef __linux__
@@ -103,12 +111,6 @@ int main(void) {
 #endif
 	firstThread.join();
 	secondThread.join();
-#ifdef  __linux__
-	close(senderSock);
-#elif _WIN32
-	closesocket(senderSock);
-	WSACleanup();
-#endif
-
+	SocketClose(senderSock);
 	return 0;
 }
