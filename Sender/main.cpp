@@ -100,7 +100,7 @@ int main(void) {
 		
 #ifdef __linux__
 		socklen_t handlerSize = sizeof(handlerAddress);
-		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), handlerSize);
+		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
 #elif _WIN32
 		int handlerSize = sizeof(handlerAddress);
 		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
