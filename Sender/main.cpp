@@ -97,7 +97,8 @@ int main(void) {
 			}
 		}
 		listen(senderSock, 1);
-		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), reinterpret_cast<int*>(sizeof(handlerAddress)));
+		int handlerSize = sizeof(handlerAddress);
+		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), reinterpret_cast<int*>(handlerSize));
 		std::cout << sum << std::endl;
 	});
 #ifdef __linux__
