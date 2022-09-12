@@ -4,6 +4,7 @@
 #include <mutex>
 #ifdef __linux__
 #include <pthread.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -12,7 +13,6 @@
 #include <Windows.h>
 #include <winsock.h>
 #endif
-
 #define DEFAULT_PORT 1918
 
 
