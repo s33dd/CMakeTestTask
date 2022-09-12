@@ -68,7 +68,29 @@ int main(void) {
 		SocketClose(senderSock);
 		return 0;
 	}
-
+	if (listen(senderSock, 1) < 0) {
+		std::cout << "ERROR: Listening failed." << std::endl;
+		SocketClose(senderSock);
+		return 0;
+	}
+	std::cout << "Waiting for handler" << std::endl;
+#ifdef __linux__
+	socklen_t handlerSize = sizeof(handlerAddress);
+	senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
+	if (senderSock < 0) {
+		std::cout << "ERROR: Accepting failed." << std::endl;
+		SocketClose(senderSock);
+		return 0;
+	}
+#elif _WIN32
+	int handlerSize = sizeof(handlerAddress);
+	senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
+	if (senderSock < 0) {
+		std::cout << "ERROR: Accepting failed." << std::endl;
+		SocketClose(senderSock);
+		return 0;
+	}
+#endif
 	std::string input;
 	std::mutex mutex;
 	std::thread firstThread([&input, &mutex]() {
@@ -96,26 +118,6 @@ int main(void) {
 				sum += line[i] - '0';
 			}
 		}
-		if (listen(senderSock, 1) < 0) {
-			std::cout << "ERROR: Listening failed." << std::endl;
-			SocketClose(senderSock);
-		}
-		
-#ifdef __linux__
-		socklen_t handlerSize = sizeof(handlerAddress);
-		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
-		if (senderSock < 0) {
-			std::cout << "ERROR: Accepting failed." << std::endl;
-			SocketClose(senderSock);
-		}
-#elif _WIN32
-		int handlerSize = sizeof(handlerAddress);
-		senderSock = accept(senderSock, reinterpret_cast<sockaddr*>(&handlerAddress), &handlerSize);
-		if (senderSock < 0) {
-			std::cout << "ERROR: Accepting failed." << std::endl;
-			SocketClose(senderSock);
-		}
-#endif
 		std::cout << sum << std::endl;
 	});
 #ifdef __linux__
