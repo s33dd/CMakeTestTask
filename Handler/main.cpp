@@ -47,7 +47,7 @@ int main(void) {
 		std::cout << "Trying to connect" << std::endl;
 #ifdef __linux__
 		socklen_t senderSize = sizeof(senderAddress);
-		if (connect(handlerSock, reinterpret_cast<sockaddr*>(&senderAddress), &senderSize) != 0) {
+		if (connect(handlerSock, reinterpret_cast<sockaddr*>(&senderAddress), senderSize) != 0) {
 			std::cout << "ERROR: Connection failed." << std::endl;
 			sleep(1);
 		}
