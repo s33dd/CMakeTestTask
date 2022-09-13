@@ -2,6 +2,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #ifdef __linux__
 #include <pthread.h>
 #include <unistd.h>
@@ -97,51 +98,47 @@ int main(void) {
 	}
 #endif
 	std::cout << "Handler connected" << std::endl;
-	std::string input;
-	std::mutex mutex;
-	std::thread firstThread([&input, &mutex]() {
-		mutex.lock();
-		input = UserInput();
-		while (!IsCorrect(input)) {
+	while(true) {
+		std::string input;
+		std::mutex mutex;
+		std::condition_variable condition;
+		bool written = false;
+		std::thread firstThread([&input, &mutex, &condition, &written]() {
+			std::unique_lock lock(mutex);
 			input = UserInput();
-		}
-		input = Processing(input);
-		mutex.unlock();
-	});
-	std::thread secondThread([&input, &mutex, &senderSock, &handlerAddress]() {
-		mutex.lock();
-		std::string line = input;
-		input.clear();
-		mutex.unlock();
-		std::cout << "Received data: " << line << std::endl;
-		const int size = static_cast<int>(line.length());
-		int sum = 0;
-		for(int i = 0; i < size; i++) {
-			if(line[i] == 'R') {
-				i += 2;
+			while (!IsCorrect(input)) {
+				input = UserInput();
 			}
-			else {
-				sum += line[i] - '0';
+			input = Processing(input);
+			written = true;
+			condition.notify_one();
+			});
+		std::thread secondThread([&input, &mutex, &senderSock, &condition, &written]() {
+			std::unique_lock lock(mutex);
+			if(!written) {
+				condition.wait(lock);
 			}
-		}
-		std::string stringBuf = std::to_string(sum);
-		char data[BUFFER_SIZE]{};
-		for (int i = 0; i < stringBuf.length(); i++) {
-			data[i] = stringBuf.c_str()[i];
-		}
-		send(senderSock, data, BUFFER_SIZE, 0);
-	});
-#ifdef __linux__
-	sched_param threadParams;
-	int policy;
-	pthread_getschedparam(secondThread.native_handle(), &policy, &threadParams);
-	threadParams.sched_priority = 10;
-	pthread_setschedparam(secondThread.native_handle(), policy, &threadParams);
-#elif _WIN32
-	SetThreadPriority(secondThread.native_handle(), THREAD_PRIORITY_LOWEST);
-#endif
-	firstThread.join();
-	secondThread.join();
-	SocketClose(senderSock);
-	return 0;
+			std::string line = input;
+			input.clear();
+			std::cout << "Received data: " << line << std::endl;
+			const int size = static_cast<int>(line.length());
+			int sum = 0;
+			for (int i = 0; i < size; i++) {
+				if (line[i] == 'R') {
+					i += 2;
+				}
+				else {
+					sum += line[i] - '0';
+				}
+			}
+			std::string stringBuf = std::to_string(sum);
+			char data[BUFFER_SIZE]{};
+			for (int i = 0; i < stringBuf.length(); i++) {
+				data[i] = stringBuf.c_str()[i];
+			}
+			send(senderSock, data, BUFFER_SIZE, 0);
+			});
+		firstThread.join();
+		secondThread.join();
+	}
 }
